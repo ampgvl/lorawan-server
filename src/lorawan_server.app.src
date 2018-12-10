@@ -36,7 +36,7 @@
         {devstat_gap, {432000, 96}},
         {max_lost_after_reset, 10},
         % packet_forwarder's push_timeout_ms + network delay
-        {gateway_delay, 500},
+        {gateway_delay, 400},
         {deduplication_delay, 200},
         {server_stats_interval, 60}, % [s]
         {slack_server, {"slack.com", 443}},
