@@ -397,7 +397,7 @@ create_node(Gateways, {#network{netid=NetID}=Network, Profile, #device{deveui=De
         adr_use=initial_adr(Network), adr_failed=[],
         dcycle_use=Network#network.dcycle_init,
         % rxwin_use=accept_rxwin(Profile, Network), rxwin_failed=[],
-        rxwin_use=accept_rxwin(Network, Profile), rxwin_failed=[],         
+        rxwin_use=Network#network.rxwin_init, rxwin_failed=[],         
         devstat_fcnt=undefined, last_qs=[]},
     Node2 =
         case mnesia:read(node, DevAddr, write) of
