@@ -396,7 +396,8 @@ create_node(Gateways, {#network{netid=NetID}=Network, Profile, #device{deveui=De
         gateways=Gateways, adr_flag=0, adr_set=undefined,
         adr_use=initial_adr(Network), adr_failed=[],
         dcycle_use=Network#network.dcycle_init,
-        rxwin_use=accept_rxwin(Profile, Network), rxwin_failed=[],
+        % rxwin_use=accept_rxwin(Profile, Network), rxwin_failed=[],
+        rxwin_use=accept_rxwin(Network, Profile), rxwin_failed=[],         
         devstat_fcnt=undefined, last_qs=[]},
     Node2 =
         case mnesia:read(node, DevAddr, write) of
@@ -424,6 +425,7 @@ initial_adr(#network{init_chans=Chans, max_power=MaxPower}) ->
 
 % values that can be set directly via Join Accept's DLsettings
 accept_rxwin(#profile{rxwin_set={A1,B1,_}}, #network{rxwin_init={A2,B2,C}}) ->
+    lager:debug("GVL test"),
     {if
         is_integer(A1) -> A1;
         true -> A2
