@@ -6,6 +6,7 @@ e.g. belong to a single customer.
 
 For each Area you can set:
  - **Name** of the area.
+ - **Region** that determines behaviour of LoRaWAN Gateways in this area.
  - **Administrators** responsible for this area.
  - **Slack Channel** where status alerts shall be published.
  - **Log Ignored?** indicates whether uplink frames from unknown and ignored nodes
@@ -48,7 +49,8 @@ For the status:
  - **Last Report** shows a timestamp of the last status report
  - **Network Delay** graph shows network (LAN) delay between the gateway and the server
    measured during the [`PULL_RESP`](https://github.com/Lora-net/packet_forwarder/blob/master/PROTOCOL.TXT#L274)
-   sequence. Note this requires packet_forwarder v3.0 or higher.
+   sequence. Note this requires packet_forwarder v3.0 or higher. The graph may not
+   be updated when there is no LoRa traffic.
  - **Transmissions** graph shows how much did the gateway transmit in past hour.
    This is useful to monitor regulatory compliance.
 
@@ -122,7 +124,7 @@ On the Channels tab you can set:
 
 Class B and Class C devices support multicast. Multiple devices can be configured
 to listen for downlinks targeted to a given *DevAddr*, so the same frame can be
-received by a group of devices. See also the [Communication](Communication.md) guide.
+received by a group of devices. See also the [Introduction](Introduction.md).
 
 To define a multicast channel you need to set:
  - **DevAddr** of the channel; this must not collide with any *Node* address.

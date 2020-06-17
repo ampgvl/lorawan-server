@@ -4,8 +4,12 @@ Open-source LoRaWAN Server that integrates both the network-server and the appli
 This is useful for application providers that operate their own LoRaWAN network,
 or for device and application developers.
 
-**Warning** After a major version upgrade you are required to review and complete
+**Warning** This is a development version 0.7.0. Use the stable 0.6.x instead, please.
+After a major version upgrade you are required to review and complete
 the configuration before connecting any gateway or device!
+ * After migrating to 0.7.x you need to
+   - Remove the `/admin` suffix from *Server* -> *Admin URL*.
+   - Make sure all Gateways are assigned to an Area with a specified Region.
  * After migrating from version 0.5.x to 0.6.x you need to assign Profiles to
    Groups and Gateways to Areas.
  * Migrating from version 0.4.x to 0.5.x will preserve the Device/Node addresses
@@ -15,12 +19,13 @@ the configuration before connecting any gateway or device!
 The server:
  * Implements the LoRaWAN Specification v1.0.3
  * Communicates with (any number of) remote LoRaWAN gateways. It currently supports:
-   * All gateways based on the [Packet Forwarder](https://github.com/Lora-net/packet_forwarder),
+   * Gateways based on the [Packet Forwarder](https://github.com/Lora-net/packet_forwarder),
      such as the Semtech LoRa demo kit,
      [LoRa Lite Gateway](https://wireless-solutions.de/products/long-range-radio/lora_lite_gateway.html),
      [LORANK-8](http://webshop.ideetron.nl/LORANK-8),
      [MultiConnect Conduit](http://www.multitech.com/brands/multiconnect-conduit),
      or [Kerlink Wirnet Stations](http://www.kerlink.fr/en/products/lora-iot-station-2/wirnet-station-868)
+   * Gateways using the [Basic Station](https://doc.sm.tc/station/) [LNS Protocol](https://doc.sm.tc/station/tcproto.html)
  * Performs all required encryption and integrity checks.
    * Supports relaxed frame-counter check for simple ABP devices.
  * Invokes internal modules with application logic. It provides examples for:
@@ -87,7 +92,7 @@ The lorawan-server includes all functions required to run a private LoRaWAN netw
 It integrates your LoRaWAN network directly with your backend IT systems.
 The server is provided as a comprehensive package with a single configuration file
 and a single administration tool.
-You only need to install the [Erlang/OTP](http://www.erlang.org) 19 or higher.
+You only need to install the [Erlang/OTP](http://www.erlang.org) 21.0 or higher.
 
 The main components of the lorawan-server are shown in the following figure:
 
@@ -193,22 +198,9 @@ Please let me know if you use the lorawan-server and want to be listed here.
 The lorawan-server is distributed under the terms of the MIT License.
 See the [LICENSE](LICENSE).
 
-Copyright (c) 2016-2018 Petr Gotthard
+Copyright (c) 2016-2019 Petr Gotthard
 
 ### Sponsors
-
-<a href="https://www.konicaminolta.eu/en/business-solutions/home.html"><img align="left" src="https://raw.githubusercontent.com/gotthardp/lorawan-server/master/doc/images/logo-konica-minolta.png"></a>
-[KMLE](http://research.konicaminolta.eu) is working on the challenge of
-helping customers optimize the way they work by digitizing the workplace
-and their workflows.
-
-<br/>
-
-<a href="http://www.iotini.com"><img align="left" src="http://www.iotini.com/images/logo.png"></a>
-[I2OT](http://www.iotini.com/#product) is the first industrial wireless sensor
-system that provides a total solution for industrial sensing needs.
-
-<br/>
 
 <a href="https://softline.com/"><img align="left" src="doc/images/X1_Softline.png"></a>
 Softline is a leading global Information Technology solutions and services provider focused on emerging markets such as Eastern Europe, Central Asia, Americas, and Asia. We help our customer achieve digital transformation and protect their business with cybersecurity technologies. Our services include end-to-end technology solutions, public and private clouds, software and hardware provisioning and broad array of associated services.

@@ -1,5 +1,5 @@
 %
-% Copyright (c) 2016-2018 Petr Gotthard <petr.gotthard@centrum.cz>
+% Copyright (c) 2016-2019 Petr Gotthard <petr.gotthard@centrum.cz>
 % All rights reserved.
 % Distributed under the terms of the MIT License. See the LICENSE file.
 %
@@ -47,7 +47,7 @@ post_json(Uri, Body) ->
     Response = lorawan_http_digest:response(<<"POST">>, list_to_binary(Uri), <<>>,
         {<<"admin">>, <<"lorawan-server">>, <<"admin">>}, Nonce),
 
-    {ok, {{_Version, 204, _ReasonPhrase2}, _Headers2, _Body2}} =
+    {ok, {{_Version, 200, _ReasonPhrase2}, _Headers2, _Body2}} =
         httpc:request(post, {"http://localhost:8080/api/" ++ Uri,
             [{"Authorization", binary_to_list(
                 lorawan_http_digest:header(digest, [{<<"username">>, <<"admin">>},

@@ -1,5 +1,5 @@
 %
-% Copyright (c) 2016-2018 Petr Gotthard <petr.gotthard@centrum.cz>
+% Copyright (c) 2016-2019 Petr Gotthard <petr.gotthard@centrum.cz>
 % All rights reserved.
 % Distributed under the terms of the MIT License. See the LICENSE file.
 %
@@ -211,7 +211,7 @@ publish_uplink(PubChannel, Format, PatPub, Vars0) ->
 
 publish_event(PubChannel, PatPub, Vars0) ->
     Vars = lorawan_admin:build(Vars0),
-    amqp_channel:cast(PubChannel, basic_publish(PatPub, Vars0),
+    amqp_channel:cast(PubChannel, basic_publish(PatPub, Vars),
         #amqp_msg{payload = jsx:encode(Vars)}).
 
 basic_publish(PatPub, Vars) ->

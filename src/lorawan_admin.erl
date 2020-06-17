@@ -1,5 +1,5 @@
 %
-% Copyright (c) 2016-2018 Petr Gotthard <petr.gotthard@centrum.cz>
+% Copyright (c) 2016-2019 Petr Gotthard <petr.gotthard@centrum.cz>
 % All rights reserved.
 % Distributed under the terms of the MIT License. See the LICENSE file.
 %
@@ -8,37 +8,62 @@
 -export([handle_authorization/2, handle_authorization_ex/2, fields_empty/1, auth_field/2]).
 -export([write/1, parse/1, build/1]).
 -export([parse_field/2, build_field/2]).
--export([timestamp_to_json_date/1]).
+-export([set_body_json_id/3, timestamp_to_json_date/1]).
 
 -include("lorawan.hrl").
 -include("lorawan_db.hrl").
 
 handle_authentication(Req) ->
-    case cowboy_req:parse_header(<<"authorization">>, Req) of
-        {digest, Params} ->
-            Method = cowboy_req:method(Req),
-            UserName = proplists:get_value(<<"username">>, Params, <<>>),
-            Nonce = proplists:get_value(<<"nonce">>, Params, <<>>),
-            URI = proplists:get_value(<<"uri">>, Params, <<>>),
-            Response = proplists:get_value(<<"response">>, Params, <<>>),
-            % retrieve and check password
-            case mnesia:dirty_read(user, UserName) of
-                [#user{pass_ha1=HA1, scopes=AuthScopes}] ->
-                    case lorawan_http_digest:response(Method, URI, <<>>, HA1, Nonce) of
-                        Response ->
-                            {true, AuthScopes};
-                        _Else ->
-                            {false, digest_header()}
-                    end;
-                [] ->
+    handle_authentication_field(Req,
+        cowboy_req:parse_header(<<"authorization">>, Req)).
+
+% when the client provided HTTP Basic password
+handle_authentication_field(_Req, {basic, User, Pass}) ->
+    case mnesia:dirty_read(user, User) of
+        [#user{pass_ha1=HA1, scopes=AuthScopes}] ->
+            case lorawan_http_digest:ha1({User, ?REALM, Pass}) of
+                HA1 ->
+                    {true, AuthScopes};
+                _Else ->
+                    {false, erlang:iolist_to_binary([<<"Basic realm=\"">>, ?REALM, $"])}
+            end;
+        [] ->
+            {false, erlang:iolist_to_binary([<<"Basic realm=\"">>, ?REALM, $"])}
+    end;
+% when the client did respond to the HTTP Digest challenge
+handle_authentication_field(Req, {digest, Params}) ->
+    Method = cowboy_req:method(Req),
+    UserName = proplists:get_value(<<"username">>, Params, <<>>),
+    Nonce = proplists:get_value(<<"nonce">>, Params, <<>>),
+    URI = proplists:get_value(<<"uri">>, Params, <<>>),
+    Response = proplists:get_value(<<"response">>, Params, <<>>),
+    % retrieve and check password
+    case mnesia:dirty_read(user, UserName) of
+        [#user{pass_ha1=HA1, scopes=AuthScopes}] ->
+            case lorawan_http_digest:response(Method, URI, <<>>, HA1, Nonce) of
+                Response ->
+                    {true, AuthScopes};
+                _Else ->
                     {false, digest_header()}
             end;
-        _Else ->
+        [] ->
+            {false, digest_header()}
+    end;
+% if nothing was provided
+handle_authentication_field(Req, _Else) ->
+    case cowboy_req:method(Req) of
+        <<"OPTIONS">> ->
+            preflight;
+        _ ->
             {false, digest_header()}
     end.
 
 handle_authorization(Req, {Read, Write}) ->
     case handle_authentication(Req) of
+        preflight ->
+            % we need the list to be non-empty (so the request is not forbidden),
+            % but also must not grant access to any of the existing fields
+            {true, ['_']};
         {true, AuthScopes} ->
             case lists:member(cowboy_req:method(Req), [<<"OPTIONS">>, <<"GET">>]) of
                 true ->
@@ -54,6 +79,8 @@ handle_authorization(Req, Read) ->
 
 handle_authorization_ex(Req, {Read, Write}) ->
     case handle_authentication(Req) of
+        preflight ->
+            {true, ['_'], []};
         {true, AuthScopes} ->
             {true, authorized_fields(AuthScopes, Read++Write), authorized_fields(AuthScopes, Write)};
         {false, Header} ->
@@ -117,6 +144,10 @@ parse(Object) when is_map(Object) ->
             (eid, Value) -> parse_eid(Value, Object);
             (Key, Value) -> parse_field(Key, Value)
         end,
+        Object);
+parse(Object) when is_list(Object) ->
+    lists:map(
+        fun (Value) -> parse(Value) end,
         Object).
 
 build(Object) when is_map(Object) ->
@@ -419,11 +450,11 @@ parse_opt(Field, List) ->
     parse_opt(Field, List, undefined).
 
 intervals_to_text(List) when is_list(List) ->
-    lists:flatten(string:join(
+    lists:flatten(lists:join(", ",
         lists:map(
             fun ({A, A}) -> integer_to_list(A);
                 ({B, C}) -> [integer_to_list(B), "-", integer_to_list(C)]
-            end, List), ", "));
+            end, List)));
 intervals_to_text(_) ->
     % this is for backward compatibility, will be removed in few months
     % I don't think anyone ever used anything else than 7
@@ -432,11 +463,15 @@ intervals_to_text(_) ->
 text_to_intervals(Text) ->
     lists:map(
         fun (Item) ->
-            case string:tokens(Item, "- ") of
+            case string:lexemes(Item, "- ") of
                 [A] -> {list_to_integer(A), list_to_integer(A)};
                 [B, C] -> {list_to_integer(B), list_to_integer(C)}
             end
-        end, string:tokens(Text, ";, ")).
+        end, string:lexemes(Text, ";, ")).
+
+set_body_json_id(Key, Value, Req) ->
+    cowboy_req:set_resp_body(
+        jsx:encode(#{id => build_field(Key, Value)}), Req).
 
 timestamp_to_json_date({{Yr,Mh,Dy},{Hr,Me,Sc}}) ->
     list_to_binary(

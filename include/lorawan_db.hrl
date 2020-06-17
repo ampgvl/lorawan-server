@@ -1,5 +1,5 @@
 %
-% Copyright (c) 2016-2018 Petr Gotthard <petr.gotthard@centrum.cz>
+% Copyright (c) 2016-2019 Petr Gotthard <petr.gotthard@centrum.cz>
 % All rights reserved.
 % Distributed under the terms of the MIT License. See the LICENSE file.
 %
@@ -21,7 +21,7 @@
     codr :: binary(),
     time :: calendar:datetime(),
     tmms :: integer(),
-    tmst :: integer(),
+    reserved :: any(), %% for future use
     rssi :: number(),
     lsnr :: number()}).
 
@@ -29,12 +29,12 @@
     freq :: number(),
     datr :: binary() | integer(),
     codr :: binary(),
-    tmst :: 'undefined' | integer(),
-    time :: 'undefined' | 'immediately' | calendar:datetime(),
+    time :: integer() | 'immediately' | calendar:datetime(),
     powe :: 'undefined' | integer()}).
 
 -record(area, {
     name :: nonempty_string(),
+    region :: binary(),
     admins :: [nonempty_string()],
     slack_channel :: 'undefined' | string(),
     log_ignored :: boolean()}).

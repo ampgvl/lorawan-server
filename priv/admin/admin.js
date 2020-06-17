@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2016-2018 Petr Gotthard <petr.gotthard@centrum.cz>
+ * Copyright (c) 2016-2019 Petr Gotthard <petr.gotthard@centrum.cz>
  * All rights reserved.
  * Distributed under the terms of the MIT License. See the LICENSE file.
  */
-var myApp = angular.module('myApp', ['ng-admin', 'uiGmapgoogle-maps', 'googlechart', 'ngVis', 'colorpicker.module']);
+var myApp = angular.module('myApp', ['ng-admin', 'googlechart', 'ui-leaflet', 'ngVis', 'colorpicker.module']);
 myApp.config(['NgAdminConfigurationProvider', function (nga) {
     var admin = nga.application(NodeName+' Admin').baseApiUrl('/api/');
 
@@ -48,6 +48,22 @@ myApp.config(['NgAdminConfigurationProvider', function (nga) {
         .identifier(nga.field('pid'));
     var events = nga.entity('events')
         .identifier(nga.field('evid'));
+
+    region_choices = [
+        { value: 'EU868', label: 'EU 863-870MHz' },
+        { value: 'US902', label: 'US 902-928MHz' },
+        // Multitech Private Hybrid Mode
+        // http://www.multitech.net/developer/software/lora/introduction-to-lora
+        { value: 'US902-PR', label: 'US 902-928MHz (Private Hybrid)' },
+        { value: 'CN779', label: 'China 779-787MHz' },
+        { value: 'EU433', label: 'EU 433MHz' },
+        { value: 'AU915', label: 'Australia 915-928MHz' },
+        { value: 'CN470', label: 'China 470-510MHz' },
+        { value: 'AS923', label: 'Asia 923MHz' },
+        { value: 'KR920', label: 'South Korea 920-923MHz' },
+        { value: 'IN865', label: 'India 865-867MHz' },
+        { value: 'RU868', label: 'Russia 864-870MHz' }
+    ];
 
     adr_choices = [
         { value: 0, label: 'Disabled' },
@@ -124,7 +140,6 @@ myApp.config(['NgAdminConfigurationProvider', function (nga) {
         // General
         nga.field('admin_url').label('Admin URL'),
         nga.field('items_per_page', 'number'),
-        nga.field('google_api_key').label('Google API Key'),
         nga.field('slack_token'),
         // E-Mail
         nga.field('email_from').label('From'),
@@ -213,6 +228,7 @@ myApp.config(['NgAdminConfigurationProvider', function (nga) {
     // ---- areas
     areas.listView().fields([
         nga.field('name').isDetailLink(true),
+        nga.field('region'),
         nga.field('log_ignored', 'boolean').label('Log Ignored?')
     ])
     .perPage(ItemsPerPage)
@@ -220,6 +236,9 @@ myApp.config(['NgAdminConfigurationProvider', function (nga) {
 
     areas.creationView().fields([
         nga.field('name')
+            .validation({ required: true }),
+        nga.field('region', 'choice')
+            .choices(region_choices)
             .validation({ required: true }),
         nga.field('admins', 'reference_many').label('Administrators')
             .targetEntity(users)
@@ -257,6 +276,7 @@ myApp.config(['NgAdminConfigurationProvider', function (nga) {
             })
             .validation({ required: true, pattern: '[A-Fa-f0-9]{2}([-:]?[A-Fa-f0-9]{2}){7}' }),
         nga.field('area', 'reference')
+            .validation({ required: true })
             .targetEntity(areas)
             .targetField(nga.field('name')),
         nga.field('tx_rfch', 'number').label('TX Chain')
@@ -314,21 +334,7 @@ myApp.config(['NgAdminConfigurationProvider', function (nga) {
             .attributes({ placeholder: 'e.g. 0123AB' })
             .validation({ required: true, pattern: '[A-Fa-f0-9]{6}' }),
         nga.field('region', 'choice')
-            .choices([
-                { value: 'EU868', label: 'EU 863-870MHz' },
-                { value: 'US902', label: 'US 902-928MHz' },
-                // Multitech Private Hybrid Mode
-                // http://www.multitech.net/developer/software/lora/introduction-to-lora
-                { value: 'US902-PR', label: 'US 902-928MHz (Private Hybrid)' },
-                { value: 'CN779', label: 'China 779-787MHz' },
-                { value: 'EU433', label: 'EU 433MHz' },
-                { value: 'AU915', label: 'Australia 915-928MHz' },
-                { value: 'CN470', label: 'China 470-510MHz' },
-                { value: 'AS923', label: 'Asia 923MHz' },
-                { value: 'KR920', label: 'South Korea 920-923MHz' },
-                { value: 'IN865', label: 'India 865-867MHz' },
-                { value: 'RU868', label: 'Russia 864-870MHz' }
-            ])
+            .choices(region_choices)
             .validation({ required: true }),
         nga.field('tx_codr', 'choice').label('Coding Rate')
             .choices([
@@ -870,14 +876,14 @@ myApp.config(['NgAdminConfigurationProvider', function (nga) {
             .template(function(entry) {
                 return format_mac_array(entry.values.mac);
             }),
-        nga.field('rssi', 'number').label('U/L RSSI')
+        nga.field('rssi').label('U/L RSSI')
             .map(function(value, entry) {
                 return array_slice_rxq(entry.gateways, 'rssi');
             })
             .template(function(entry) {
                 return entry.values.rssi.join('<br>');
             }),
-        nga.field('lsnr', 'number').label('U/L SNR')
+        nga.field('lsnr').label('U/L SNR')
             .map(function(value, entry) {
                 return array_slice_rxq(entry.gateways, 'lsnr');
             })
@@ -1022,6 +1028,7 @@ myApp.config(['NgAdminConfigurationProvider', function (nga) {
                 { value: 'devaddr', label: 'devaddr' },
                 { value: 'deveui', label: 'deveui' },
                 { value: 'appargs', label: 'appargs' },
+                { value: 'desc', label: 'desc' },
                 { value: 'battery', label: 'battery' },
                 { value: 'fcnt', label: 'fcnt' },
                 { value: 'port', label: 'port' },
@@ -1035,7 +1042,9 @@ myApp.config(['NgAdminConfigurationProvider', function (nga) {
                 { value: 'mac', label: 'mac' },
                 { value: 'lsnr', label: 'lsnr' },
                 { value: 'rssi', label: 'rssi' },
-                { value: 'all_gw', label: 'all_gw' }
+                { value: 'all_gw', label: 'all_gw' },
+                { value: 'gpsalt', label: 'gpsalt' },
+                { value: 'gpspos', label: 'gpspos' }
             ]),
         nga.field('payload', 'choice')
             .choices([
@@ -1220,7 +1229,7 @@ myApp.config(['NgAdminConfigurationProvider', function (nga) {
                     .template(function(entry) {
                         return format_mac_array(entry.values.mac);
                     }),
-                nga.field('lsnr', 'number').label('U/L SNR')
+                nga.field('lsnr').label('U/L SNR')
                     .map(function(value, entry) {
                         return array_slice_rxq(entry.gateways, 'lsnr');
                     })
@@ -1679,51 +1688,55 @@ return {
     template: '<vis-timeline data="data" options="options" events="events"></vis-timeline>'
 };}]);
 
-// http://stackoverflow.com/questions/35895411/ng-admin-and-google-maps
-myApp.directive('map', [function () {
+myApp.directive('map', ['leafletData', '$timeout', function (leafletData, $timeout) {
 return {
     restrict: 'E',
     scope: {
         value: '=location',
     },
-    link: function($scope, uiGmapIsReady) {
+    controller: function($scope) {
         if ($scope.value == undefined) {
             $scope.value = { lat: 48.88, lon: 14.12};
         }
-        $scope.map = { center: { latitude: $scope.value.lat, longitude: $scope.value.lon }, zoom: 4 };
-        $scope.marker = {
-            id: 0,
-            coords: {
-                latitude: $scope.value.lat,
-                longitude: $scope.value.lon
-            },
-            options: { draggable: true },
-            events: {
-                dragend: function (marker, eventName, args) {
-                    $scope.value = { lat: marker.getPosition().lat(), lon: marker.getPosition().lng() };
-                }
+        $scope.defaults = {
+            tileLayer: MapTileServer
+        };
+        $scope.center = {
+            lat: $scope.value.lat,
+            lng: $scope.value.lon,
+            zoom: 10
+        };
+        $scope.markers = {
+            main: {
+                lat: $scope.value.lat,
+                lng: $scope.value.lon,
+                focus: true,
+                draggable: true
             }
         };
+        $scope.events = {
+            markers: { enable: [ 'dragend' ]}
+        };
+        $scope.$on("leafletDirectiveMarker.dragend", function(event, args){
+            $scope.value.lat = args.model.lat;
+            $scope.value.lon = args.model.lng;
+        });
+        // correctly resize the map after being displayed
+        leafletData.getMap().then(function(map) {
+            $timeout(function() {
+                map.invalidateSize();
+            }, 300);
+        });
     },
     template:
     `
     <div class="row list-view">
         <div class="col-lg-12">
-            <ui-gmap-google-map center="map.center" zoom="map.zoom" draggable="true" options="options" pan=true refresh="true">
-                <ui-gmap-marker coords="marker.coords" options="marker.options" events="marker.events" idkey="marker.id"/>
-            </ui-gmap-google-map>
+            <leaflet defaults="defaults" lf-center="center" event-broadcast="events" markers="markers" width="100%" height="400px"></leaflet>
         </div>
     </div>
     `
 };}]);
-
-myApp.config(function (uiGmapGoogleMapApiProvider) {
-    uiGmapGoogleMapApiProvider.configure({
-        key: GoogleAPIKey,
-        v: '3',
-        libraries: 'visualization'
-    });
-});
 
 myApp.directive('sgraph', ['$http', '$interval', function($http, $interval) {
 return {
@@ -1733,6 +1746,8 @@ return {
     },
     link: function($scope) {
             function updateData() {
+                if (!'value' in $scope)
+                    return
                 $http({method: 'GET', url: '/admin/sgraph/'.concat($scope.value)})
                     .then(function(response) {
                         $scope.srvChartObject.data = response.data.array;
@@ -1782,6 +1797,8 @@ return {
     },
     link: function($scope) {
             function updateData() {
+                if (!'value' in $scope)
+                    return
                 $http({method: 'GET', url: '/admin/pgraph/'.concat($scope.value)})
                     .then(function(response) {
                         $scope.prChartObject.data = response.data.array;
@@ -1830,6 +1847,8 @@ return {
     },
     link: function($scope) {
             function updateData() {
+                if (!'value' in $scope)
+                    return
                 $http({method: 'GET', url: '/admin/tgraph/'.concat($scope.value)})
                     .then(function(response) {
                         $scope.txChartObject.data = response.data.array;
@@ -1880,6 +1899,8 @@ return {
     },
     link: function($scope) {
             function updateData() {
+                if (!'value' in $scope)
+                    return
                 $http({method: 'GET', url: '/admin/rgraph/'.concat($scope.value)})
                     .then(function(response) {
                         $scope.rxChartObject.data = response.data.array;
@@ -1933,6 +1954,8 @@ return {
     },
     link: function($scope) {
             function updateData() {
+                if (!'value' in $scope)
+                    return
                 $http({method: 'GET', url: '/admin/qgraph/'.concat($scope.value)})
                     .then(function(response) {
                         $scope.rxqChartObject.data = response.data.array;
@@ -1985,6 +2008,8 @@ return {
     },
     link: function($scope) {
             function updateData() {
+                if (!'value' in $scope)
+                    return
                 $http({method: 'GET', url: '/admin/ngraph/'.concat($scope.value)})
                     .then(function(response) {
                         $scope.rxdChartObject.data = response.data.array;

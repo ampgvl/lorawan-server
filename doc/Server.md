@@ -13,12 +13,13 @@ For each User you can set:
 
 The following scopes are defined:
  - *unlimited* enables both read and write access to everything
- - *web-admin* covers the administration web-pages (html, css and javascript)
+ - *web-admin* covers access to the administration web-pages (html, css and javascript)
  - *server:read* and *server:write* covers the entire user and server configuration
  - *network:read* and *network:write* covers the entire area, gateway and network configuration
  - *device:read* and *device:write* covers the entire group, profile, device and node configuration
  - *backend:read* and *backend:write* covers the entire handler and connector configuration
- - *device:send* covers initiating downlinks to a device
+ - *gateway:link* covers ability to connect as a gateway and send/receive frames
+ - *device:send* covers ability to initiate downlinks to a device
 
 Internal applications may add their specific scopes.
 
@@ -48,11 +49,12 @@ The Status tab displays:
 ## Configuration
 
 This is a server-server configuration. You can set the following parameters:
- - **Admin URL** included in E-Mail messages
+ - **Admin URL** with `http://` or `https://` and server IP:port. This shall be
+   the base address, after which `/admin` (or whatever defined by
+   `http_admin_path`) can be appended to access the web-admin, or `/api` can be
+   appended to access the REST API.
  - **Items Per Page** defines maximal length of each web-admin list. Clear this
    value to enable infinite paging.
- - **Google API Key**, which has Google Maps enabled. You can
-   [get your API Key](https://developers.google.com/maps/documentation/javascript/get-api-key) from Google.
  - **Slack Token** that identifies the Slack group
 
 In the E-Mail you can set:

@@ -1,5 +1,5 @@
 %
-% Copyright (c) 2016-2018 Petr Gotthard <petr.gotthard@centrum.cz>
+% Copyright (c) 2016-2019 Petr Gotthard <petr.gotthard@centrum.cz>
 % All rights reserved.
 % Distributed under the terms of the MIT License. See the LICENSE file.
 %
@@ -33,7 +33,7 @@ init([#connector{connid=Id, app=App, uri= <<"mongodb://", Servers0/binary>>,
     % connect
     {UserName, Password} = credentials(Connector),
     mongodb:replicaSets(Pool, 10,
-        string:tokens(binary_to_list(Servers0), ", "), UserName, Password),
+        string:lexemes(binary_to_list(Servers0), ", "), UserName, Password),
     mongodb:connect(Pool),
     try
         {ok, #state{

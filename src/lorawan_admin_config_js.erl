@@ -1,5 +1,5 @@
 %
-% Copyright (c) 2016-2018 Petr Gotthard <petr.gotthard@centrum.cz>
+% Copyright (c) 2016-2019 Petr Gotthard <petr.gotthard@centrum.cz>
 % All rights reserved.
 % Distributed under the terms of the MIT License. See the LICENSE file.
 %
@@ -39,10 +39,11 @@ content_types_provided(Req, State) ->
     ], Req, State}.
 
 handle_get(Req, State) ->
-    [#config{items_per_page=Items, google_api_key=GMaps}] =
+    [#config{items_per_page=Items}] =
         mnesia:dirty_read(config, <<"main">>),
+    {ok, TileServer} = application:get_env(lorawan_server, map_tile_server),
     {variable(<<"NodeName">>, atom_to_binary(node(), latin1),
-     variable(<<"GoogleAPIKey">>, GMaps,
+     variable(<<"MapTileServer">>, TileServer,
         if
             Items == undefined ->
                 variable(<<"ItemsPerPage">>, 30,

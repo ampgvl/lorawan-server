@@ -131,6 +131,15 @@ sent some other data. It may be because:
  * You have some other Mote device. Make sure your firmware uses the
    [supported format](https://github.com/Lora-net/LoRaMac-node/blob/master/src/apps/LoRaMac/classA/LoRaMote/main.c#L207).
 
+### ack_lost
+
+Warning reported by the gateway: it did not receive
+[PUSH_ACK](https://github.com/Lora-net/packet_forwarder/blob/master/PROTOCOL.TXT#L86)
+on time. In the
+[packet_forwarder config](https://github.com/Lora-net/packet_forwarder/blob/master/lora_pkt_fwd/global_conf.json#L221)
+there is a push_timeout_ms set by default to 100ms. Try increasing this value to
+e.g. 500ms.
+
 ### downlink_missed
 
 Confirmed downlink was sent, but the device indicated it did not received it.
@@ -144,7 +153,7 @@ See the **D/L Expires** setting of the corresponding [Handler](Handlers.md).
 ### prerequisite_failed
 
 This is reported when the lorawan-server is started with older Erlang/OTP. At
-least 19.0 (or later) is required.
+least 21.0 (or later) is required.
 
 ### connector_disabled
 
@@ -165,10 +174,22 @@ The problem is the Lorank8 proprietary message format. In your gateway config
 you likely have `stat_format` set to `idee_concise` or `idee_verbose`. You need
 to change `stat_format` to `semtech` to get this working.
 
+### Browser is unnable to connect to web admin
+
+When you get a timeout or "Unable to connect" or similar error while connecting
+to the web admin:
+ * verify the server is running
+ * check the REST API is accessible on localhost by e.g.
+   `wget http://localhost:8080/api/servers`
+ * check the REST API is accessible remotely by e.g. `wget http://your_server:8080/api/servers`
+ 
+If the server is accessible on localhost but not remotely, check your firewall
+and/or VPN for any port filtering. The tcp/8080 must be allowed.
+
 ### Browser reports NS_ERROR_NET_INADEQUATE_SECURITY
 
 You are using old version of Erlang that does not support the newest ciphers
-required by HTTP/2. Erlang 20 is recommended for TLS/SSL.
+required by HTTP/2. The latest Erlang is recommended for TLS/SSL.
 
 As a quick fix, in Mozilla you can disable the checks in `about:config`, by
 setting `network.http.spdy.enforce-tls-profile` to `false`.

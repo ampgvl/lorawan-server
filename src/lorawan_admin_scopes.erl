@@ -1,5 +1,5 @@
 %
-% Copyright (c) 2016-2018 Petr Gotthard <petr.gotthard@centrum.cz>
+% Copyright (c) 2016-2019 Petr Gotthard <petr.gotthard@centrum.cz>
 % All rights reserved.
 % Distributed under the terms of the MIT License. See the LICENSE file.
 %
@@ -41,7 +41,8 @@ content_types_provided(Req, State) ->
 
 handle_get(Req, #state{name=undefined}=State) ->
     Scopes = lorawan_http_registry:get(scopes),
-    {jsx:encode([[{name, S}] || S <- Scopes]), Req, State};
+    Req2 = cowboy_req:set_resp_header(<<"x-total-count">>, integer_to_binary(length(Scopes)), Req),
+    {jsx:encode([[{id, S}, {name, S}] || S <- Scopes]), Req2, State};
 handle_get(Req, #state{name=Name}=State) ->
     {jsx:encode([{name, Name}]), Req, State}.
 

@@ -33,6 +33,14 @@ The server Dashboard shows:
    The lines are sorted by severity.
  * Seven most recent [Events](Infrastructure.md#events.md) and seven most recent
    frames received.
+   
+ Note on Events
+ * 'too_late' events come from the packet_forwarder and means the packet arrived
+   to late to be programmed into concentrator.
+ * 'too_early' events come from the packet_forwarder and means the packet is
+   programmed too early in time, however because of an overflow it can mean
+   'too_late' as well, see [this issue](https://github.com/Lora-net/packet_forwarder/issues/47).
+
 
 The following configuration pages are available:
  - [**Server**](Server.md) enables configuration and monitoring and also
@@ -79,6 +87,34 @@ To enable E-Mail notifications:
    to **Send Alerts**.
  * For the desired Areas and/or Groups set the **Admins** that shall receive
    the notifications.
+
+
+## Prometheus Support
+
+Server performance may also be monitored with standard statistic gathering tools
+like [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/).
+
+To enable Prometheus support, add or uncomment the following line in your server's
+configuration file (See [Configuration Guidelines](Configuration.md) for details):
+
+```erlang
+[{lorawan_server, [
+    ...
+    % Set the following parameter to true to export statistics metrics in Prometheus format
+    {enable_prometheus, true},
+    ...
+ ]},
+ ...
+]
+```
+
+Once enabled, the metrics information will be exported at `http(s)://your.server:port/metrics`
+endpoint. The information exported will consist of all the available metrics supported
+by [Prometheus client for Erlang](https://github.com/deadtrickster/prometheus.erl) and
+[Prometheus support for Cowboy](https://github.com/deadtrickster/prometheus-cowboy) modules,
+including Cowboy, Erlang VM and Mnesia database, apart from the LoRaWAN server specific
+metrics prefixed with `lorawan_` designator. To get a finer control over what types of
+information get exported in the metrics, please consult the documents at the links above.
 
 
 ## REST API

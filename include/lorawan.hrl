@@ -1,5 +1,5 @@
 %
-% Copyright (c) 2016-2018 Petr Gotthard <petr.gotthard@centrum.cz>
+% Copyright (c) 2016-2019 Petr Gotthard <petr.gotthard@centrum.cz>
 % All rights reserved.
 % Distributed under the terms of the MIT License. See the LICENSE file.
 %
@@ -31,7 +31,6 @@
     name :: nonempty_string(),
     admin_url :: string(),
     items_per_page :: integer(),
-    google_api_key :: 'undefined' | string(),
     slack_token :: 'undefined' | string(),
     email_from :: 'undefined' | string(),
     email_server :: 'undefined' | string(),

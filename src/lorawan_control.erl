@@ -1,5 +1,5 @@
 %
-% Copyright (c) 2016-2018 Petr Gotthard <petr.gotthard@centrum.cz>
+% Copyright (c) 2016-2019 Petr Gotthard <petr.gotthard@centrum.cz>
 % All rights reserved.
 % Distributed under the terms of the MIT License. See the LICENSE file.
 %
@@ -18,7 +18,7 @@ stop() ->
 
 invoke(Module, Fun, Params) ->
     % use short names, so only the first part of the hostname
-    [Host | _] = string:tokens(net_adm:localhost(), "."),
+    [Host | _] = string:lexemes(net_adm:localhost(), "."),
     Node = list_to_atom(string:join(["lorawan", Host], "@")),
     case rpc:call(Node, Module, Fun, Params) of
         ok -> ok;

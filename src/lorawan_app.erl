@@ -1,5 +1,5 @@
 %
-% Copyright (c) 2016-2018 Petr Gotthard <petr.gotthard@centrum.cz>
+% Copyright (c) 2016-2019 Petr Gotthard <petr.gotthard@centrum.cz>
 % All rights reserved.
 % Distributed under the terms of the MIT License. See the LICENSE file.
 %
@@ -13,7 +13,8 @@ start() ->
     {ok, _Started} = application:ensure_all_started(lorawan_server).
 
 start(_Type, _Args) ->
-    ok = ensure_erlang_version(19),
+    ok = ensure_erlang_version(21),
+    lager:debug("Using config: ~p", [application:get_all_env(lorawan_server)]),
     lorawan_db:ensure_tables(),
     case {application:get_env(lorawan_server, http_admin_listen, []), retrieve_valid_ssl()} of
         {[], []} ->
@@ -75,7 +76,7 @@ ensure_erlang_version(Min) ->
 
 normal_dispatch() ->
     cowboy_router:compile([
-        {'_', lorawan_http_registry:get_static(routes)}
+        {'_', lorawan_http_registry:get_static(routes)++lorawan_http_registry:get_custom(routes)}
     ]).
 
 redirect_dispatch() ->
@@ -87,11 +88,15 @@ redirect_dispatch() ->
 start_http(Opts, Dispatch) ->
     {ok, _} = cowboy:start_clear(http, Opts, #{
         env => #{dispatch => Dispatch},
-        stream_handlers => [lorawan_admin_logger, cowboy_compress_h, cowboy_stream_h]}).
+        metrics_callback => fun prometheus_cowboy2_instrumenter:observe/1,
+        stream_handlers => [lorawan_admin_logger, cowboy_compress_h,
+                            cowboy_metrics_h, cowboy_stream_h]}).
 
 start_https(Opts, Dispatch) ->
     {ok, _} = cowboy:start_tls(https, Opts, #{
         env => #{dispatch => Dispatch},
-        stream_handlers => [lorawan_admin_logger, cowboy_compress_h, cowboy_stream_h]}).
+        metrics_callback => fun prometheus_cowboy2_instrumenter:observe/1,
+        stream_handlers => [lorawan_admin_logger, cowboy_compress_h,
+                            cowboy_metrics_h, cowboy_stream_h]}).
 
 % end of file

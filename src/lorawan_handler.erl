@@ -1,5 +1,5 @@
 %
-% Copyright (c) 2016-2018 Petr Gotthard <petr.gotthard@centrum.cz>
+% Copyright (c) 2016-2019 Petr Gotthard <petr.gotthard@centrum.cz>
 % All rights reserved.
 % Distributed under the terms of the MIT License. See the LICENSE file.
 %
@@ -115,7 +115,7 @@ join(cast, {rxq, Gateways0}, {{Network, Profile, Device}, DevAddr, DevNonce}) ->
             lorawan_mac_region:join1_window(Network, RxQ);
         1 ->
             lager:debug("Join-Accept in RX2: ~p ~p", [RxQ, Node#node.rxwin_use]),
-            lorawan_mac_region:join2_window(Network, Node, RxQ)
+            lorawan_mac_region:join2_window(Network, Node)
     end,
     lorawan_gw_router:downlink({MAC, GWState}, Network, DevAddr, TxQ, PHYPayload),
     % the task has been completed
@@ -162,7 +162,7 @@ uplink(cast, {rxq, Gateways0}, {TimeStamp, {Network, Profile, Node},
             send_unicast({MAC, GWState}, {Network, Profile, Node2}, TxQ, Confirm, FOptsOut, TxData);
         ok when ShallReply ->
             % application has nothing to send, but we still need to repond
-            send_unicast({MAC, GWState}, {Network, Profile, Node2}, TxQ, Confirm, FOptsOut, #txdata{});
+            send_unicast({MAC, GWState}, {Network, Profile, Node2}, TxQ, Confirm, FOptsOut, #txdata{data= <<>>});
         ok ->
             ok;
         {error, Error} ->
@@ -177,8 +177,8 @@ extract_rxq(Gateways) ->
 
 choose_tx({Network, #profile{txwin=1}, Node}, RxQ, _Timestamp) ->
     lorawan_mac_region:rx1_window(Network, Node, RxQ);
-choose_tx({Network, #profile{txwin=2}, Node}, RxQ, _Timestamp) ->
-    lorawan_mac_region:rx2_window(Network, Node, RxQ);
+choose_tx({Network, #profile{txwin=2}, Node}, _RxQ, _Timestamp) ->
+    lorawan_mac_region:rx2_window(Network, Node);
 choose_tx({#network{rx1_delay=Rx1Delay}=Network, _Profile, Node}, RxQ, TimeStamp) ->
     {ok, GwDelay} = application:get_env(lorawan_server, gateway_delay),
     % transmit as soon as possible
@@ -186,7 +186,7 @@ choose_tx({#network{rx1_delay=Rx1Delay}=Network, _Profile, Node}, RxQ, TimeStamp
         Small when Small < Rx1Delay*1000 - GwDelay ->
             lorawan_mac_region:rx1_window(Network, Node, RxQ);
         _Big ->
-            lorawan_mac_region:rx2_window(Network, Node, RxQ)
+            lorawan_mac_region:rx2_window(Network, Node)
     end.
 
 send_unicast({MAC, GWState}, {Network, Profile, #node{devaddr=DevAddr}=Node}, TxQ, ACK, FOpts,
@@ -231,7 +231,7 @@ retransmit(cast, {rxq, Gateways0}, {{Network, Profile, #node{devaddr=DevAddr}=No
             TxQ =
                 case alternate_rxwin(Profile, Count) of
                     0 -> lorawan_mac_region:rx1_window(Network, Node, RxQ);
-                    1 -> lorawan_mac_region:rx2_window(Network, Node, RxQ)
+                    1 -> lorawan_mac_region:rx2_window(Network, Node)
                 end,
             lager:debug("~s retransmitting ~B", [lorawan_utils:binary_to_hex(DevAddr), Count]),
             lorawan_gw_router:downlink({MAC, GWState}, Network, DevAddr, TxQ, PHYPayload),
@@ -331,7 +331,7 @@ build_rxframe(Dir, Gateways, {#network{name=NetName}, #profile{app=App},
         app=App, devaddr=DevAddr, location=Location, gateways=Gateways,
         average_qs=AverageQs, powe=TXPower,
         fcnt=FCnt, confirm=bit_to_bool(Confirm), port=Port, data=Data,
-        datetime=calendar:universal_time()};
+        datetime=lorawan_utils:precise_universal_time()};
 build_rxframe(Dir, MAC, {#network{name=NetName}, #profile{app=App},
         #node{location=Location, devaddr=DevAddr, fcntdown=FCnt}},
         #txdata{confirmed=Confirm, port=Port, data=Data}) ->
@@ -339,7 +339,7 @@ build_rxframe(Dir, MAC, {#network{name=NetName}, #profile{app=App},
     #rxframe{frid=FrId, dir=Dir, network=NetName,
         app=App, devaddr=DevAddr, location=Location, gateways=[{MAC, #rxq{}}],
         fcnt=FCnt, confirm=Confirm, port=Port, data=Data,
-        datetime=calendar:universal_time()};
+        datetime=lorawan_utils:precise_universal_time()};
 build_rxframe(Dir, MAC, {#network{name=NetName}, #profile{app=App},
         #multicast_channel{devaddr=DevAddr, fcntdown=FCnt}},
         #txdata{confirmed=Confirm, port=Port, data=Data}) ->
@@ -347,7 +347,7 @@ build_rxframe(Dir, MAC, {#network{name=NetName}, #profile{app=App},
     #rxframe{frid=FrId, dir=Dir, network=NetName,
         app=App, devaddr=DevAddr, gateways=[{M, #rxq{}} || M <- MAC],
         fcnt=FCnt, confirm=Confirm, port=Port, data=Data,
-        datetime=calendar:universal_time()}.
+        datetime=lorawan_utils:precise_universal_time()}.
 
 bit_to_bool(0) -> false;
 bit_to_bool(1) -> true.

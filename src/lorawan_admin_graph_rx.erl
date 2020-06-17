@@ -1,5 +1,5 @@
 %
-% Copyright (c) 2016-2018 Petr Gotthard <petr.gotthard@centrum.cz>
+% Copyright (c) 2016-2019 Petr Gotthard <petr.gotthard@centrum.cz>
 % All rights reserved.
 % Distributed under the terms of the MIT License. See the LICENSE file.
 %
@@ -80,7 +80,7 @@ send_empty(Req, DevAddr, State) ->
     {jsx:encode([{devaddr, DevAddr}, {array, []}]), Req, State}.
 
 send_array(Req, #network{region=Region, max_eirp=MaxEIRP}, DevAddr, ActRec, #state{format=rgraph}=State) ->
-    {Min, Max} = lorawan_mac_region:freq_range(Region),
+    #{min:=Min, max:=Max} = lorawan_mac_region:freq(Region),
     % construct Google Chart DataTable
     % see https://developers.google.com/chart/interactive/docs/reference#dataparam
     Array = [{cols, [

@@ -1,5 +1,5 @@
 %
-% Copyright (c) 2016-2018 Petr Gotthard <petr.gotthard@centrum.cz>
+% Copyright (c) 2016-2019 Petr Gotthard <petr.gotthard@centrum.cz>
 % All rights reserved.
 % Distributed under the terms of the MIT License. See the LICENSE file.
 %
@@ -25,6 +25,9 @@ init([]) ->
         {http_registry,
             {lorawan_http_registry, start_link, []},
             permanent, 5000, worker, [lorawan_http_registry]},
+        {prometheus,
+            {lorawan_prometheus, start_link, []},
+            permanent, 5000, worker, [lorawan_prometheus]},
         {backends,
             {lorawan_backend_sup, start_link, []},
             permanent, infinity, supervisor, [lorawan_backend_sup]}
